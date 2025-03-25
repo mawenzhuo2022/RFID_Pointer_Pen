@@ -1,56 +1,35 @@
-//receiver
-
 #include <SoftwareSerial.h>
 
-// Define Bluetooth module communication pins
-#define BT_RX 10   // Bluetooth module TX connected to Arduino RX
-#define BT_TX 11   // Bluetooth module RX connected to Arduino TX
-#define LED 13     // LED indicator connected to Arduino pin 13
-
-// Create a SoftwareSerial instance for Bluetooth communication
-SoftwareSerial BTSerial(BT_RX, BT_TX);
+// 在 Arduino Uno 上，指定 D10 作为 SoftwareSerial RX 引脚（连到蓝牙 TX），
+// 指定 D11 作为 SoftwareSerial TX 引脚（连到蓝牙 RX）
+SoftwareSerial BTSerial(10, 11);
 
 void setup() {
-  pinMode(LED, OUTPUT);        // Set LED pin as output
-  Serial.begin(9600);          // Initialize serial communication with the PC
-  BTSerial.begin(9600);        // Initialize Bluetooth communication
-  Serial.println("Bluetooth Receiver Initialized. Waiting for data...");
+  // 1. 打开硬件串口(Arduino自带串口) 用于调试输出
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // 等待串口就绪，仅在需要时使用
+  }
+  
+  // 2. 打开蓝牙对应的SoftwareSerial串口
+  //    波特率要与 Bluetooth Mate 模块默认波特率相匹配
+  //    常见默认值：9600, 38400, 或 115200（需参考模块资料）
+  BTSerial.begin(9600);
+
+  Serial.println("==== Bluetooth Mate test begin ====");
+  Serial.println("Ready to pair with PC via Bluetooth");
 }
 
 void loop() {
-  if (BTSerial.available()) {  // Check if there is incoming Bluetooth data
-    digitalWrite(LED, HIGH);   // Turn on LED when data is received
-    char data = BTSerial.read();
-    Serial.print("Received: ");
-    Serial.println(data);
-    delay(100);
-  } else {
-    digitalWrite(LED, LOW);    // Turn off LED when no data is received
+  // 从 Bluetooth Mate 读取数据并转发到串口监视器
+  if (BTSerial.available()) {
+    char c = BTSerial.read();
+    Serial.write(c);
+  }
+
+  // 从串口监视器读取数据并转发到 Bluetooth Mate
+  if (Serial.available()) {
+    char c = Serial.read();
+    BTSerial.write(c);
   }
 }
-
-
-//sender
-
-#include <SoftwareSerial.h>
-
-// Define Bluetooth module communication pins
-#define BT_RX 10   // Bluetooth module TX connected to Arduino RX
-#define BT_TX 11   // Bluetooth module RX connected to Arduino TX
-
-// Create a SoftwareSerial instance for Bluetooth communication
-SoftwareSerial BTSerial(BT_RX, BT_TX);
-
-void setup() {
-  Serial.begin(9600);         // Initialize serial communication with the PC
-  BTSerial.begin(9600);       // Initialize Bluetooth communication (ensure the baud rate matches the module)
-  Serial.println("Bluetooth Sender Initialized. Sending data...");
-}
-
-void loop() {
-  // Periodically send string data via Bluetooth
-  BTSerial.println("Hello from Arduino");
-  Serial.println("Data sent: Hello from Arduino");
-  delay(2000);  // Send data every 2 seconds
-}
-
